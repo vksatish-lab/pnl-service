@@ -17,7 +17,7 @@ Assumptions
 
 Technology Stack 
 1. Rest Services - Java/SpringBoot 
-2. Database - Relational - MySQL (Opensource)
+2. Database - Relational - Postgresql (Opensource)
 3. App Server container - Embedded Tomcat as part of JAR file.
 4. Messaging - Apache Kafka for async processing on backend server. 
 5. Batch Processing - Spring Batch.
