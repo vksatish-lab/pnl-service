@@ -47,10 +47,10 @@ Here is the system design -
 2. How do we ensure that last data will always take precedence  ?
   * Every incoming request would be will be captured with <b>requestedOn</b> or <b>asOf</b> data indicating timestamp of request and data associated with ti.
   * At the time of database operation following things will happen in order -
-    * For every record determine is its an insert or update
+    * For every record determine if its an insert or update
     * If its insert perform plan insert
-    * If its an Update check for position asOf date and compare it against incomming position asOfDate if its less update it else ignore the update as this would be stale update
-    * The version field on each row should help clustered enviornment to ensure and preventing servers working from stale copy.
+    * If its an Update check for position asOf date and compare it against incoming position asOfDate if its less update it else ignore the update as this would be stale update
+    * The version field on each row should help clustered environment to ensure and preventing servers working from stale copy.
 
 3. How does the design handles zoombie rows or stale rows or closed positions? 
   * <b>Assumption</b> In case of closing of any position an assumption is made that client has to send reversal or new updated position with O PNL. Upon receiving of such reversal the record should get updated with DB with values a 0. For audit purpose we would still track that row instead of deleting it with value as zero.

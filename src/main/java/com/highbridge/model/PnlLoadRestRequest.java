@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class LoadPnlRequest {
+public class PnlLoadRestRequest {
 
     @NotEmpty(message = "List cannot be empty for load")
     List<PnlRequest> pnls;

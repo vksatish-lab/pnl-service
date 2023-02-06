@@ -6,5 +6,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LoadPnlResponse {
-    String requestId;
+    Long requestId;
 }

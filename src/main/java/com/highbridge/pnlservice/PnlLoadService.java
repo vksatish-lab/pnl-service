@@ -1,12 +1,13 @@
 package com.highbridge.pnlservice;
 
+import com.highbridge.businesslogic.PnlLoadServiceBusinessLogic;
 import com.highbridge.domain.LoadRequestStatus;
+import com.highbridge.domain.PnlLoadRequest;
 import com.highbridge.domain.RequestCompletionStatusReason;
-import com.highbridge.model.LoadPnlRequest;
+import com.highbridge.model.PnlLoadRestRequest;
 import com.highbridge.model.LoadPnlResponse;
 import com.highbridge.model.PnlLoadStatusResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -20,29 +21,29 @@ import java.util.UUID;
 @RestController
 public class PnlLoadService {
 
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
-    private final static String TOPIC_NAME = "TOPIC_NAME";
-
     /**
      * Initiate request to refresh PNL records
+     *
      * @param loadPnlRequest
      * @return
      */
+    PnlLoadServiceBusinessLogic businessLogic;
+
+    public PnlLoadService(@Autowired PnlLoadServiceBusinessLogic businessLogic) {
+        this.businessLogic = businessLogic;
+    }
+
     @PostMapping("/pnl/load")
-    public LoadPnlResponse loadPnl(@RequestBody LoadPnlRequest loadPnlRequest) {
-        //1. Seed the request in status table
-        //2. Load the data in staging table
-        //3. Add a kafka message for consumer to pick up and load
+    public LoadPnlResponse loadPnl(@RequestBody PnlLoadRestRequest pnlLoadRestRequest) {
+        PnlLoadRequest request = businessLogic.processIncomingRequest(pnlLoadRestRequest);
         LoadPnlResponse response = new LoadPnlResponse();
-        response.setRequestId(UUID.randomUUID().toString()); // This is request if from Step #1 above
-        // publish kafka message
-        sendMessage(response.getRequestId());
+        response.setRequestId(request.getId());
         return response;
     }
 
     /**
      * Fetch status of particular load request id.
+     *
      * @param requestId
      * @return PnlLoadStatusResponse
      */
@@ -71,7 +72,4 @@ public class PnlLoadService {
         return Arrays.asList(response);
     }
 
-    private void sendMessage(String msg) {
-        kafkaTemplate.send(TOPIC_NAME, msg);
-    }
 }
