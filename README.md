@@ -19,15 +19,13 @@ Technology Stack
 1. Rest Services - Java/SpringBoot 
 2. Database - Relational - Postgresql (Opensource)
 3. App Server container - Embedded Tomcat as part of JAR file.
-4. Messaging - Apache Kafka for async processing on backend server. 
-5. Batch Processing - Spring Batch.
+5. Scheduler - Spring scheduler.
 6. For service to be on clustered we will be having load balancer ahead of services. 
 7. Front React/Next.js based application deployed on node server.  (Why next.js - gives library overs plain vanilla react enabling faster time to market)
 
 For cloud based solution - 
 1. Services could be deployed to EC2 instance
 2. Database on AWS RDS
-3. For Messaging AWS SQS
 
 * Enabling the async processing on backend enables for -
   * 1. Future load
