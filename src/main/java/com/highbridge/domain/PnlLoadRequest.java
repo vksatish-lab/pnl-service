@@ -19,4 +19,6 @@ public class PnlLoadRequest {
     Instant requestedOn;  // This value determines which entry takes priority while updating tables. last one always wins
     Instant createdOn;
     Instant lastUpdatedOn;
+    int version;
+
 }

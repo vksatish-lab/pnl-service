@@ -33,10 +33,9 @@ For cloud based solution -
   * 1. Future load
     2. If we need to pivot the design from client initiated data to self extract and load 
 
-All table schema can be found at - [schema-all.sql](src%2Fmain%2Fresources%2Fschema-all.sql)
 
 Here is the system design -
-![Alt text](design.jpeg?raw=true "Title")
+![Alt text](design.png?raw=true "Title")
 
 ### FAQ 
 
@@ -45,15 +44,19 @@ Here is the system design -
    * Failed records will be captured in ErrorRecord table for it to replayed back to user
 
 2. How do we ensure that last data will always take precedence  ?
-  * Every incoming request would be will be captured with <b>requestedOn</b> or <b>asOf</b> data indicating timestamp of request and data associated with ti.
+  * Every incoming request would be will be captured with <b>requestedOn</b> or <b>asOf</b> data indicating timestamp of request and data associated with it.
+  * <b>Poller only picks up <b>most recent</b> request to process if in case there are multiple pending request to process. </b>
   * At the time of database operation following things will happen in order -
-    * For every record determine if its an insert or update
-    * If its insert perform plan insert
-    * If its an Update check for position asOf date and compare it against incoming position asOfDate if its less update it else ignore the update as this would be stale update
+    * For every record determine if its an insert or update or delete
+      *     Insert - If the record is source but not in master PNL table
+      *     Update - if the record is source with latestimestap as compared to master PNL TABLE 
+      *     Delete - if the record is not in source but present in master PNL TABLE 
+
+    * For Delete mark the rows as soft deleted using isDeleted flag
     * The version field on each row should help clustered environment to ensure and preventing servers working from stale copy.
 
 3. How does the design handles zoombie rows or stale rows or closed positions? 
-  * <b>Assumption</b> In case of closing of any position an assumption is made that client has to send reversal or new updated position with O PNL. Upon receiving of such reversal the record should get updated with DB with values a 0. For audit purpose we would still track that row instead of deleting it with value as zero.
+  * <b>Any records which not in input payload but in master will be terminated as part of refresh request </b>
 
 4. What is your testing strategy -
    * Junit testing for all backend code 
@@ -63,13 +66,64 @@ Here is the system design -
 5. Provide Sample code for request/response 
    *  All request & response are captured in package  - [com.highbridge.model](src%2Fmain%2Fjava%2Fcom%2Fhighbridge%2Fmodel)
 
-6. Client Implementation
-  * Client would be implemented using React/Next.js framework deployed on Node server.
+6. On server side do we need to pull all data in memory from staging and master at once to comparison ?
+   * Given the volume of data this should be not be an Issue.
+   * The solution could also be implemented via simply using three different query to directly join tables and perform update, delete and insert.I continued with this solution assuming if there are any enrichment
+   or business logic we need to perform we can do it.
+   * If we encounter increase in volume solution could be batched & multi-threaded as required. 
+
+7. Client Implementation
+   * Client would be implemented using React/Next.js framework deployed on Node server.
+
+## Table Schema 
+All table schema can be found at - [schema-all.sql](src%2Fmain%2Fresources%2Fschema-all.sql) . Also shared below -
+
+````
+CREATE TABLE PnlLoadRequest  (
+    id BIGINT PRIMARY KEY, --uuid
+    uploadedBy VARCHAR(20),  -- userID
+    status VARCHAR(30),    -- PENDING, IN_PROGRESS COMPLETED
+    statusReason VARCHAR(30),  -- SUCCESS,PARTIAL_LOAD,ERROR
+    requestedOn DATE,
+    createdOn DATE,
+    lastUpdatedOn TIMESTAMP
+);
 
 
-TODO Items: 
-1. Passing reference data across spring batch process. 
+CREATE TABLE PnlLoadStaging  (
+    id BIGINT PRIMARY KEY,
+    ticker VARCHAR(20),
+    quantity  double,
+    price double,
+    securityType VARCHAR(30),
+    pnl double,
+    loadRequestId VARCHAR(36) -- ref to PnlLoadRequest
+);
 
+CREATE TABLE ErrorRecords  (
+    id BIGINT PRIMARY KEY,
+    ticker VARCHAR(20),
+    securityType VARCHAR(30),
+    quantity  double,
+    price double,
+    requestId VARCHAR(36), -- ref to PnlLoadRequest
+    errorReason VARCHAR(100)
+);
+
+CREATE TABLE Pnl  (
+    id BIGINT PRIMARY KEY,
+    ticker VARCHAR(20),
+    quantity  double,
+    price double,
+    securityType VARCHAR(30),
+    pnl double,
+    batchId BIGINT, --Reference to request ID based on client request
+    lastUpdate TIMESTAMP,
+    isDeleted boolean
+);
+
+
+````
 
 # Clarification from HB
 * [Assumption] I am assuming the position file would roughly have around 5-10 columns and for approx 10K rows positions file won't exceed in worst case scenario 2MB.

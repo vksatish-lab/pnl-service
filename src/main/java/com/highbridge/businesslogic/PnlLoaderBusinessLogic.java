@@ -52,9 +52,12 @@ public class PnlLoaderBusinessLogic {
         List<Pnl> insertPnls = createListForInsert(stagingList, pnls);
         List<Pnl> updatePnls = createListForUpdate(stagingList, pnls, pnlLoadRequest);
         List<Pnl> deletePnls = createListForDelete(stagingList, pnls);
+
         pnlDao.savePnls(insertPnls);
         pnlDao.updatePnls(updatePnls);
         pnlDao.deletePnls(deletePnls);
+        // capture error during any business logic or during persistance and return it as list of error object
+
         return Collections.emptyList();
     }
 
@@ -67,6 +70,7 @@ public class PnlLoaderBusinessLogic {
             // update status as SUCCESS and reason as COMPLETE
         } else {
             // update status as SUCCESS with reason as PARTIAL_LOAD
+            // ALSO update status of all prev pending request with SKIPPED status as the most recent one is completed
         }
     }
 
